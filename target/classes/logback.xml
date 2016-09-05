@@ -1,0 +1,87 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!-- ~ Copyright ©2015 The Aleph Group PTE limited ( ALEPH). Copyright protection 
+	includes content in the material generated from the software program. All 
+	information contained in the material is confidential and proprietary to 
+	ALEPH. Any attempt to copy, reproduce or modify and re-distribute this software 
+	and its documentation without express prior written permission is expressly 
+	prohibited and may result in sever civil and criminal penalties. Use of the 
+	Software is governed by the terms of the end user license agreement, if any, 
+	which accompanies or is included with the Software ("License Agreement") 
+	.Contact eng-operations@culturemachine.in for commercial licensing opportunities. 
+	All Rights Reserved. ~ ~ These libraries and applications are trademarks 
+	or registered trademarks of The Aleph Group PTE Limited, in Singapore, United 
+	States of America and/or other countries. All other trademarks are the property 
+	of their respective owners. ~ ~ Technologies described herein may be covered 
+	by existing U.S. patents or U.S. patent applications that are in progress. 
+	~ ~ IN NO EVENT SHALL ALEPH BE LIABLE TO ANY PARTY FOR DIRECT, INDIRECT, 
+	SPECIAL, INCIDENTAL, OR CONSEQUENTIAL DAMAGES, INCLUDING LOST PROFITS, ARISING 
+	OUT OF THE USE OF THIS SOFTWARE AND ITS DOCUMENTATION, EVEN IF ALEPH HAS 
+	BEEN ADVISED OF THE POSSIBILITY OF SUCH DAMAGE. ALEPH SPECIFICALLY DISCLAIMS 
+	ANY WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED WARRANTIES OF 
+	MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE. THE SOFTWARE AND ACCOMPANYING 
+	DOCUMENTATION, IF ANY, PROVIDED HEREUNDER IS PROVIDED "AS IS". ALEPH HAS 
+	NO OBLIGATION TO PROVIDE MAINTENANCE, SUPPORT, UPDATES, ENHANCEMENTS, OR 
+	MODIFICATIONS. -->
+
+<configuration scan="true" debug="true">
+	<timestamp key="byDate" datePattern="yyyy-MM-dd" />
+	<appender name="STDOUT" class="ch.qos.logback.core.ConsoleAppender">
+		<layout class="ch.qos.logback.classic.PatternLayout">
+			<pattern>%d{yyyy-MM-dd HH:mm:ss.SSS} [%thread] %X{auth_token}
+				%-5level %logger{36} - %msg%n%rEx{full}
+			</pattern>
+		</layout>
+	</appender>
+	<appender name="FILE"
+		class="ch.qos.logback.core.rolling.RollingFileAppender">
+		<file>/Users/CULTURE_MP10/Desktop/Projects/assignemnt/logs/aa.log</file>
+		<rollingPolicy class="ch.qos.logback.core.rolling.TimeBasedRollingPolicy">
+			<fileNamePattern> /Users/CULTURE_MP10/Desktop/Projects/assignemnt/logs/aa_%d{yyyy-MM-dd}.%i.log
+			</fileNamePattern>
+			<timeBasedFileNamingAndTriggeringPolicy
+				class="ch.qos.logback.core.rolling.SizeAndTimeBasedFNATP">
+				<maxFileSize>2000KB</maxFileSize>
+			</timeBasedFileNamingAndTriggeringPolicy>
+		</rollingPolicy>
+		<encoder>
+			<pattern>%d{yyyy-MM-dd HH:mm:ss.SSS} [%thread] %X{auth_token}
+				%-5level %logger{36} - %msg%n%rEx{full}
+			</pattern>
+		</encoder>
+	</appender>
+
+	<logger name="org.springframework">
+		<level value="ERROR" />
+		<appender-ref ref="FILE" />
+	</logger>
+
+	<logger name="org.hibernate">
+		<level value="ERROR" />
+		<appender-ref ref="FILE" />
+	</logger>
+
+	<logger name="com.appdirect" additivity="false">
+		<level value="ERROR" />
+		<appender-ref ref="FILE" />
+	</logger>
+
+	<logger name="com.appdirect" additivity="false">
+		<level value="INFO" />
+		<appender-ref ref="FILE" />
+	</logger>
+
+	<logger name="com.appdirect" additivity="false">
+		<level value="ERROR" />
+		<appender-ref ref="FILE" />
+	</logger>
+
+	<logger name="com.appdirect" additivity="false">
+		<level value="ERROR" />
+		<appender-ref ref="FILE" />
+	</logger>
+
+	<root>
+		<level value="ERROR" />
+		<appender-ref ref="FILE" />
+	</root>
+</configuration>
