@@ -47,7 +47,7 @@ class SubscriptionServiceImplSpecification extends  Specification {
     def "Find by account identifier"() {
 
         given:
-        def accountIdentifier = UUID.randomUUID().toString();
+        def accountIdentifier = UUID.randomUUID().toString()
         Subscription subscription  =  new Subscription()
         subscription.setIdentifier(accountIdentifier)
         subscription.setVersion(0)
@@ -112,8 +112,7 @@ class SubscriptionServiceImplSpecification extends  Specification {
         def response =  subscriptionService.cancel(subscription)
 
         then:
-        response.getIdentifier() ==  subscription.getIdentifier()
-
+        response.getStatus().toString() ==  "CANCELED"
 
     }
 

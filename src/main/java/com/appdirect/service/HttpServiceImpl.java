@@ -8,6 +8,7 @@ import oauth.signpost.basic.DefaultOAuthConsumer;
 import oauth.signpost.exception.OAuthCommunicationException;
 import oauth.signpost.exception.OAuthExpectationFailedException;
 import oauth.signpost.exception.OAuthMessageSignerException;
+import oauth.signpost.signature.AuthorizationHeaderSigningStrategy;
 import oauth.signpost.signature.QueryStringSigningStrategy;
 import org.apache.commons.io.IOUtils;
 import org.slf4j.Logger;
@@ -81,6 +82,7 @@ public class HttpServiceImpl implements HttpService {
         try {
             logger.info("Signing return url {}", url);
             consumer.setSigningStrategy(new QueryStringSigningStrategy());
+            //consumer.setSigningStrategy(new AuthorizationHeaderSigningStrategy());
             String signedUrl = consumer.sign(url);
             return signedUrl;
         } catch (Exception ex) {
@@ -89,5 +91,15 @@ public class HttpServiceImpl implements HttpService {
         }
     }
 
+    public static void main(String[] args) throws OAuthCommunicationException, OAuthExpectationFailedException, OAuthMessageSignerException {
+
+        String url = "http://localhost:8080/subscriptions/notifications/create";
+        OAuthConsumer  consumer = new DefaultOAuthConsumer("assignment-135827", "XmAXx4SgQB4EgYN8");
+
+        System.out.println( consumer.getToken());
+        consumer.setSigningStrategy(new AuthorizationHeaderSigningStrategy());
+        String signedUrl = consumer.sign(url);
+                System.out.println(signedUrl);
+    }
 
 }

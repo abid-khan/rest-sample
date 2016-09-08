@@ -1,21 +1,23 @@
 package com.appdirect.controller
 
+import com.appdirect.entity.Subscription
+import com.appdirect.repository.SubscriptionRepository
 import com.appdirect.service.HttpServiceImpl
 import com.appdirect.util.CommonUtil
+import com.appdirect.util.DataGeneratorUtil
 import groovyx.net.http.RESTClient
 import net.sf.json.xml.XMLSerializer
 import org.springframework.boot.test.context.SpringBootTest
 import org.springframework.boot.test.mock.mockito.MockBean
 import org.springframework.test.context.ContextConfiguration
 import spock.lang.AutoCleanup
-import spock.lang.Ignore
 import spock.lang.Shared
 import spock.lang.Specification
 import spock.lang.Stepwise
 
 import javax.ws.rs.core.MediaType
 
-import static org.mockito.BDDMockito.*;
+import static org.mockito.BDDMockito.*
 
 
 /**
@@ -42,10 +44,15 @@ class SubscriptionControllerSpecification extends Specification {
 
     @Shared
     @AutoCleanup
-    RESTClient restClient;
+    RESTClient restClient
 
     @MockBean
     HttpServiceImpl httpService
+
+    @MockBean
+    SubscriptionRepository subscriptionRepository
+
+
 
 
 
@@ -57,20 +64,43 @@ class SubscriptionControllerSpecification extends Specification {
     }
 
     def cleanupSpec() {
-        restClient = null;
+        restClient = null
     }
 
 
 
-    
+    def "Invalid  authorization header for create API"() {
+
+        when:
+        def response = restClient.get([
+                path : createURI,
+                query: [eventUrl: ""],
+                headers: ["Authorization" :  ""]
+        ])
+
+        then:
+        with(response) {
+            status == HttpURLConnection.HTTP_OK
+            contentType == MediaType.APPLICATION_JSON
+        }
+
+        with(response.data) {
+            success == "false"
+            accountIdentifier == ""
+            errorCode == "ERROR_400"
+            message == "Consumer key validation failed"
+        }
+    }
+
+
     def "Invalid order eventUrl"() {
 
         when:
         def response = restClient.get([
                 path : createURI,
                 query: [eventUrl: ""],
-                headers: ["Authorization" :  oauth_consumer_key="assignment-135827"]
-        ]);
+                headers: ["Authorization" :  "oauth_consumer_key=assignment-135827,oauth_nonce=8311386766772752470,oauth_signature=8EPpdSYxhozjabUA1n6TQn%2FvsDo%3D,oauth_signature_method=HMAC-SHA1,oauth_timestamp=1473272425,oauth_version=1.0"]
+        ])
 
         then:
         with(response) {
@@ -88,12 +118,14 @@ class SubscriptionControllerSpecification extends Specification {
 
     def "Order EventUrl  returns payload as null"() {
         given:
-        given(this.httpService.getResponse(dummyOrder)).willReturn(null);
+        given(this.httpService.getResponse(dummyOrder)).willReturn(null)
         when:
         def response = restClient.get([
                 path : createURI,
-                query: [eventUrl: dummyOrder]
-        ]);
+                query: [eventUrl: dummyOrder],
+                headers: ["Authorization" :  "oauth_consumer_key=assignment-135827,oauth_nonce=8311386766772752470,oauth_signature=8EPpdSYxhozjabUA1n6TQn%2FvsDo%3D,oauth_signature_method=HMAC-SHA1,oauth_timestamp=1473272425,oauth_version=1.0"]
+
+        ])
 
         then:
         with(response) {
@@ -111,13 +143,16 @@ class SubscriptionControllerSpecification extends Specification {
 
     def "Invalid subscription create type"() {
         given:
-        def jsonResponse = xmlSerializer.read(inValidOrderResponse);
-        given(this.httpService.getResponse(dummyOrder)).willReturn(jsonResponse);
+        //Mock API call
+        def jsonResponse = xmlSerializer.read(inValidOrderResponse)
+        given(this.httpService.getResponse(dummyOrder)).willReturn(jsonResponse)
         when:
         def response = restClient.get([
                 path : createURI,
-                query: [eventUrl: dummyOrder]
-        ]);
+                query: [eventUrl: dummyOrder],
+                headers: ["Authorization" :  "oauth_consumer_key=assignment-135827,oauth_nonce=8311386766772752470,oauth_signature=8EPpdSYxhozjabUA1n6TQn%2FvsDo%3D,oauth_signature_method=HMAC-SHA1,oauth_timestamp=1473272425,oauth_version=1.0"]
+
+        ])
 
         then:
         with(response) {
@@ -133,16 +168,23 @@ class SubscriptionControllerSpecification extends Specification {
         }
     }
 
-
     def "Valid subscription create"() {
         given:
-        def jsonResponse = xmlSerializer.read(validOrderResponse);
-        given(this.httpService.getResponse(dummyOrder)).willReturn(jsonResponse);
+        //Mock API call
+        def jsonResponse = xmlSerializer.read(validOrderResponse)
+        given(this.httpService.getResponse(dummyOrder)).willReturn(jsonResponse)
+
+        //Mock create call
+        Subscription subscription = DataGeneratorUtil.buildCreateSubscription(jsonResponse);
+        given(this.subscriptionRepository.saveAndFlush(subscription)).willReturn(subscription)
+
         when:
         def response = restClient.get([
                 path : createURI,
-                query: [eventUrl: dummyOrder]
-        ]);
+                query: [eventUrl: dummyOrder],
+                headers: ["Authorization" :  "oauth_consumer_key=assignment-135827,oauth_nonce=8311386766772752470,oauth_signature=8EPpdSYxhozjabUA1n6TQn%2FvsDo%3D,oauth_signature_method=HMAC-SHA1,oauth_timestamp=1473272425,oauth_version=1.0"]
+
+        ])
 
         then:
         with(response) {
@@ -159,13 +201,38 @@ class SubscriptionControllerSpecification extends Specification {
     }
 
     //Cancel Order
+    def "Invalid  authorization header for cancel API"() {
+
+        when:
+        def response = restClient.get([
+                path : cancelURI,
+                query: [eventUrl: ""],
+                headers: ["Authorization" :  ""]
+        ])
+
+        then:
+        with(response) {
+            status == HttpURLConnection.HTTP_OK
+            contentType == MediaType.APPLICATION_JSON
+        }
+
+        with(response.data) {
+            success == "false"
+            accountIdentifier == ""
+            errorCode == "ERROR_400"
+            message == "Consumer key validation failed"
+        }
+    }
+
     def "Invalid cancel order eventUrl"() {
 
         when:
         def response = restClient.get([
                 path : cancelURI,
-                query: [eventUrl: ""]
-        ]);
+                query: [eventUrl: ""],
+                headers: ["Authorization" :  "oauth_consumer_key=assignment-135827,oauth_nonce=8311386766772752470,oauth_signature=8EPpdSYxhozjabUA1n6TQn%2FvsDo%3D,oauth_signature_method=HMAC-SHA1,oauth_timestamp=1473272425,oauth_version=1.0"]
+
+        ])
 
         then:
         with(response) {
@@ -180,15 +247,18 @@ class SubscriptionControllerSpecification extends Specification {
         }
     }
 
-
     def "Cancel EventUrl  returns payload as null"() {
         given:
-        given(this.httpService.getResponse(dummyCancel)).willReturn(null);
+
+        //Mock API call
+        given(this.httpService.getResponse(dummyCancel)).willReturn(null)
         when:
         def response = restClient.get([
                 path : cancelURI,
-                query: [eventUrl: dummyCancel]
-        ]);
+                query: [eventUrl: dummyCancel],
+                headers: ["Authorization" :  "oauth_consumer_key=assignment-135827,oauth_nonce=8311386766772752470,oauth_signature=8EPpdSYxhozjabUA1n6TQn%2FvsDo%3D,oauth_signature_method=HMAC-SHA1,oauth_timestamp=1473272425,oauth_version=1.0"]
+
+        ])
 
         then:
         with(response) {
@@ -203,15 +273,20 @@ class SubscriptionControllerSpecification extends Specification {
         }
     }
 
+
     def "Invalid subscription cancel type"() {
         given:
-        def jsonResponse = xmlSerializer.read(inValidCancelResponse);
-        given(this.httpService.getResponse(dummyCancel)).willReturn(jsonResponse);
+        //Mock API call
+        def jsonResponse = xmlSerializer.read(inValidCancelResponse)
+        given(this.httpService.getResponse(dummyCancel)).willReturn(jsonResponse)
+
         when:
         def response = restClient.get([
                 path : cancelURI,
-                query: [eventUrl: dummyCancel]
-        ]);
+                query: [eventUrl: dummyCancel],
+                headers: ["Authorization" :  "oauth_consumer_key=assignment-135827,oauth_nonce=8311386766772752470,oauth_signature=8EPpdSYxhozjabUA1n6TQn%2FvsDo%3D,oauth_signature_method=HMAC-SHA1,oauth_timestamp=1473272425,oauth_version=1.0"]
+
+        ])
 
         then:
         with(response) {
@@ -226,16 +301,20 @@ class SubscriptionControllerSpecification extends Specification {
         }
     }
 
-
     def "Valid subscription cancel order"() {
         given:
-        def jsonResponse = xmlSerializer.read(validCancelResponse);
-        given(this.httpService.getResponse(dummyCancel)).willReturn(jsonResponse);
+        //Mock API call
+        def jsonResponse = xmlSerializer.read(validCancelResponse)
+        given(this.httpService.getResponse(dummyCancel)).willReturn(jsonResponse)
+
+        //TODO mock
         when:
         def response = restClient.get([
                 path : cancelURI,
-                query: [eventUrl: dummyCancel]
-        ]);
+                query: [eventUrl: dummyCancel],
+                headers: ["Authorization" :  "oauth_consumer_key=assignment-135827,oauth_nonce=8311386766772752470,oauth_signature=8EPpdSYxhozjabUA1n6TQn%2FvsDo%3D,oauth_signature_method=HMAC-SHA1,oauth_timestamp=1473272425,oauth_version=1.0"]
+
+        ])
 
         then:
         with(response) {

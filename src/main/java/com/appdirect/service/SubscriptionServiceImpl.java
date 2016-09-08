@@ -82,7 +82,7 @@ public class SubscriptionServiceImpl implements SubscriptionService {
 
             logger.info("Canceling a subscription");
             subscription.setStatus(StatusType.CANCELED);
-            return subscriptionRepository.save(subscription);
+            return subscriptionRepository.saveAndFlush(subscription);
 
         } catch (Exception ex) {
             throw new SubscriptionServiceException("Failed cancel subscription due to  {}", ex);
