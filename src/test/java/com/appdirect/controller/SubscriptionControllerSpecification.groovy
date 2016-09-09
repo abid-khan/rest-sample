@@ -3,14 +3,19 @@ package com.appdirect.controller
 import com.appdirect.entity.Subscription
 import com.appdirect.repository.SubscriptionRepository
 import com.appdirect.service.HttpServiceImpl
+import com.appdirect.service.SubscriptionService
+import com.appdirect.service.SubscriptionServiceImpl
 import com.appdirect.util.CommonUtil
 import com.appdirect.util.DataGeneratorUtil
 import groovyx.net.http.RESTClient
 import net.sf.json.xml.XMLSerializer
+import org.mockito.InjectMocks
 import org.springframework.boot.test.context.SpringBootTest
 import org.springframework.boot.test.mock.mockito.MockBean
 import org.springframework.test.context.ContextConfiguration
+import org.springframework.transaction.annotation.EnableTransactionManagement
 import spock.lang.AutoCleanup
+import spock.lang.Ignore
 import spock.lang.Shared
 import spock.lang.Specification
 import spock.lang.Stepwise
@@ -28,18 +33,18 @@ import static org.mockito.BDDMockito.*
 @ContextConfiguration
 @SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.DEFINED_PORT)
 @Stepwise
+@EnableTransactionManagement
 class SubscriptionControllerSpecification extends Specification {
 
-    def createURI= "/subscriptions/notifications/create"
-    def cancelURI= "/subscriptions/notifications/cancel"
+    def createURI = "/subscriptions/notifications/create"
+    def cancelURI = "/subscriptions/notifications/cancel"
     def dummyOrder = "https://www.appdirect.com/api/integration/v1/events/dummyOrder"
-    def dummyCancel="https://www.appdirect.com/api/integration/v1/events/dummyCancel"
+    def dummyCancel = "https://www.appdirect.com/api/integration/v1/events/dummyCancel"
     def inValidOrderResponse = "<?xml version=\"1.0\" encoding=\"UTF-8\" standalone=\"yes\"?><event xmlns:atom=\"http://www.w3.org/2005/Atom\"><type>SUBSCRIPTION_ORDER_INVALID</type><marketplace><baseUrl>https://acme.appdirect.com</baseUrl><partner>ACME</partner></marketplace><flag>STATELESS</flag><creator><email>test-email+creator@appdirect.com</email><firstName>DummyCreatorFirst</firstName><language>fr</language><lastName>DummyCreatorLast</lastName><openId>https://www.appdirect.com/openid/id/ec5d8eda-5cec-444d-9e30-125b6e4b67e2</openId><uuid>ec5d8eda-5cec-444d-9e30-125b6e4b67e2</uuid></creator><payload><company><country>CA</country><email>company-email@example.com</email><name>Example Company Name</name><phoneNumber>415-555-1212</phoneNumber><uuid>d15bb36e-5fb5-11e0-8c3c-00262d2cda03</uuid><website>http://www.example.com</website></company><configuration><entry><key>domain</key><value>mydomain</value></entry></configuration><order><editionCode>BASIC</editionCode><pricingDuration>MONTHLY</pricingDuration><item><quantity>10</quantity><unit>USER</unit></item><item><quantity>15</quantity><unit>MEGABYTE</unit></item></order></payload><returnUrl>https://www.appdirect.com/finishprocure?token=dummyOrder</returnUrl></event>\t"
     def validOrderResponse = "<?xml version=\"1.0\" encoding=\"UTF-8\" standalone=\"yes\"?><event xmlns:atom=\"http://www.w3.org/2005/Atom\"><type>SUBSCRIPTION_ORDER</type><marketplace><baseUrl>https://acme.appdirect.com</baseUrl><partner>ACME</partner></marketplace><flag>STATELESS</flag><creator><email>test-email+creator@appdirect.com</email><firstName>DummyCreatorFirst</firstName><language>fr</language><lastName>DummyCreatorLast</lastName><openId>https://www.appdirect.com/openid/id/ec5d8eda-5cec-444d-9e30-125b6e4b67e2</openId><uuid>ec5d8eda-5cec-444d-9e30-125b6e4b67e2</uuid></creator><payload><company><country>CA</country><email>company-email@example.com</email><name>Example Company Name</name><phoneNumber>415-555-1212</phoneNumber><uuid>d15bb36e-5fb5-11e0-8c3c-00262d2cda03</uuid><website>http://www.example.com</website></company><configuration><entry><key>domain</key><value>mydomain</value></entry></configuration><order><editionCode>BASIC</editionCode><pricingDuration>MONTHLY</pricingDuration><item><quantity>10</quantity><unit>USER</unit></item><item><quantity>15</quantity><unit>MEGABYTE</unit></item></order></payload><returnUrl>https://www.appdirect.com/finishprocure?token=dummyOrder</returnUrl></event>\t"
     def inValidCancelResponse = "<?xml version=\"1.0\" encoding=\"UTF-8\" standalone=\"yes\"?><event xmlns:atom=\"http://www.w3.org/2005/Atom\"><type>SUBSCRIPTION_CANCEL_INVALID</type><marketplace><baseUrl>https://acme.appdirect.com</baseUrl><partner>ACME</partner></marketplace><flag>STATELESS</flag><creator><email>test-email+creator@appdirect.com</email><firstName>DummyCreatorFirst</firstName><language>fr</language><lastName>DummyCreatorLast</lastName><openId>https://www.appdirect.com/openid/id/ec5d8eda-5cec-444d-9e30-125b6e4b67e2</openId><uuid>ec5d8eda-5cec-444d-9e30-125b6e4b67e2</uuid></creator><payload><account><accountIdentifier>dummy-account</accountIdentifier><status>ACTIVE</status></account><configuration/></payload><returnUrl>https://www.appdirect.com/finishcancel?token=dummyCancel</returnUrl></event>"
     def validCancelResponse = "<?xml version=\"1.0\" encoding=\"UTF-8\" standalone=\"yes\"?><event xmlns:atom=\"http://www.w3.org/2005/Atom\"><type>SUBSCRIPTION_CANCEL</type><marketplace><baseUrl>https://acme.appdirect.com</baseUrl><partner>ACME</partner></marketplace><flag>STATELESS</flag><creator><email>test-email+creator@appdirect.com</email><firstName>DummyCreatorFirst</firstName><language>fr</language><lastName>DummyCreatorLast</lastName><openId>https://www.appdirect.com/openid/id/ec5d8eda-5cec-444d-9e30-125b6e4b67e2</openId><uuid>ec5d8eda-5cec-444d-9e30-125b6e4b67e2</uuid></creator><payload><account><accountIdentifier>dummy-account</accountIdentifier><status>ACTIVE</status></account><configuration/></payload><returnUrl>https://www.appdirect.com/finishcancel?token=dummyCancel</returnUrl></event>"
     def xmlSerializer = new XMLSerializer()
-
 
 
     @Shared
@@ -49,11 +54,12 @@ class SubscriptionControllerSpecification extends Specification {
     @MockBean
     HttpServiceImpl httpService
 
+
     @MockBean
     SubscriptionRepository subscriptionRepository
 
-
-
+    @InjectMocks
+    SubscriptionServiceImpl subscriptionService
 
 
     def setupSpec() {
@@ -68,14 +74,13 @@ class SubscriptionControllerSpecification extends Specification {
     }
 
 
-
     def "Invalid  authorization header for create API"() {
 
         when:
         def response = restClient.get([
-                path : createURI,
-                query: [eventUrl: ""],
-                headers: ["Authorization" :  ""]
+                path   : createURI,
+                query  : [eventUrl: ""],
+                headers: ["Authorization": ""]
         ])
 
         then:
@@ -97,9 +102,9 @@ class SubscriptionControllerSpecification extends Specification {
 
         when:
         def response = restClient.get([
-                path : createURI,
-                query: [eventUrl: ""],
-                headers: ["Authorization" :  "oauth_consumer_key=assignment-135827,oauth_nonce=8311386766772752470,oauth_signature=8EPpdSYxhozjabUA1n6TQn%2FvsDo%3D,oauth_signature_method=HMAC-SHA1,oauth_timestamp=1473272425,oauth_version=1.0"]
+                path   : createURI,
+                query  : [eventUrl: ""],
+                headers: ["Authorization": "oauth_consumer_key=assignment-135827,oauth_nonce=8311386766772752470,oauth_signature=8EPpdSYxhozjabUA1n6TQn%2FvsDo%3D,oauth_signature_method=HMAC-SHA1,oauth_timestamp=1473272425,oauth_version=1.0"]
         ])
 
         then:
@@ -121,9 +126,9 @@ class SubscriptionControllerSpecification extends Specification {
         given(this.httpService.getResponse(dummyOrder)).willReturn(null)
         when:
         def response = restClient.get([
-                path : createURI,
-                query: [eventUrl: dummyOrder],
-                headers: ["Authorization" :  "oauth_consumer_key=assignment-135827,oauth_nonce=8311386766772752470,oauth_signature=8EPpdSYxhozjabUA1n6TQn%2FvsDo%3D,oauth_signature_method=HMAC-SHA1,oauth_timestamp=1473272425,oauth_version=1.0"]
+                path   : createURI,
+                query  : [eventUrl: dummyOrder],
+                headers: ["Authorization": "oauth_consumer_key=assignment-135827,oauth_nonce=8311386766772752470,oauth_signature=8EPpdSYxhozjabUA1n6TQn%2FvsDo%3D,oauth_signature_method=HMAC-SHA1,oauth_timestamp=1473272425,oauth_version=1.0"]
 
         ])
 
@@ -148,9 +153,9 @@ class SubscriptionControllerSpecification extends Specification {
         given(this.httpService.getResponse(dummyOrder)).willReturn(jsonResponse)
         when:
         def response = restClient.get([
-                path : createURI,
-                query: [eventUrl: dummyOrder],
-                headers: ["Authorization" :  "oauth_consumer_key=assignment-135827,oauth_nonce=8311386766772752470,oauth_signature=8EPpdSYxhozjabUA1n6TQn%2FvsDo%3D,oauth_signature_method=HMAC-SHA1,oauth_timestamp=1473272425,oauth_version=1.0"]
+                path   : createURI,
+                query  : [eventUrl: dummyOrder],
+                headers: ["Authorization": "oauth_consumer_key=assignment-135827,oauth_nonce=8311386766772752470,oauth_signature=8EPpdSYxhozjabUA1n6TQn%2FvsDo%3D,oauth_signature_method=HMAC-SHA1,oauth_timestamp=1473272425,oauth_version=1.0"]
 
         ])
 
@@ -180,9 +185,9 @@ class SubscriptionControllerSpecification extends Specification {
 
         when:
         def response = restClient.get([
-                path : createURI,
-                query: [eventUrl: dummyOrder],
-                headers: ["Authorization" :  "oauth_consumer_key=assignment-135827,oauth_nonce=8311386766772752470,oauth_signature=8EPpdSYxhozjabUA1n6TQn%2FvsDo%3D,oauth_signature_method=HMAC-SHA1,oauth_timestamp=1473272425,oauth_version=1.0"]
+                path   : createURI,
+                query  : [eventUrl: dummyOrder],
+                headers: ["Authorization": "oauth_consumer_key=assignment-135827,oauth_nonce=8311386766772752470,oauth_signature=8EPpdSYxhozjabUA1n6TQn%2FvsDo%3D,oauth_signature_method=HMAC-SHA1,oauth_timestamp=1473272425,oauth_version=1.0"]
 
         ])
 
@@ -205,9 +210,9 @@ class SubscriptionControllerSpecification extends Specification {
 
         when:
         def response = restClient.get([
-                path : cancelURI,
-                query: [eventUrl: ""],
-                headers: ["Authorization" :  ""]
+                path   : cancelURI,
+                query  : [eventUrl: ""],
+                headers: ["Authorization": ""]
         ])
 
         then:
@@ -228,9 +233,9 @@ class SubscriptionControllerSpecification extends Specification {
 
         when:
         def response = restClient.get([
-                path : cancelURI,
-                query: [eventUrl: ""],
-                headers: ["Authorization" :  "oauth_consumer_key=assignment-135827,oauth_nonce=8311386766772752470,oauth_signature=8EPpdSYxhozjabUA1n6TQn%2FvsDo%3D,oauth_signature_method=HMAC-SHA1,oauth_timestamp=1473272425,oauth_version=1.0"]
+                path   : cancelURI,
+                query  : [eventUrl: ""],
+                headers: ["Authorization": "oauth_consumer_key=assignment-135827,oauth_nonce=8311386766772752470,oauth_signature=8EPpdSYxhozjabUA1n6TQn%2FvsDo%3D,oauth_signature_method=HMAC-SHA1,oauth_timestamp=1473272425,oauth_version=1.0"]
 
         ])
 
@@ -254,9 +259,9 @@ class SubscriptionControllerSpecification extends Specification {
         given(this.httpService.getResponse(dummyCancel)).willReturn(null)
         when:
         def response = restClient.get([
-                path : cancelURI,
-                query: [eventUrl: dummyCancel],
-                headers: ["Authorization" :  "oauth_consumer_key=assignment-135827,oauth_nonce=8311386766772752470,oauth_signature=8EPpdSYxhozjabUA1n6TQn%2FvsDo%3D,oauth_signature_method=HMAC-SHA1,oauth_timestamp=1473272425,oauth_version=1.0"]
+                path   : cancelURI,
+                query  : [eventUrl: dummyCancel],
+                headers: ["Authorization": "oauth_consumer_key=assignment-135827,oauth_nonce=8311386766772752470,oauth_signature=8EPpdSYxhozjabUA1n6TQn%2FvsDo%3D,oauth_signature_method=HMAC-SHA1,oauth_timestamp=1473272425,oauth_version=1.0"]
 
         ])
 
@@ -282,9 +287,9 @@ class SubscriptionControllerSpecification extends Specification {
 
         when:
         def response = restClient.get([
-                path : cancelURI,
-                query: [eventUrl: dummyCancel],
-                headers: ["Authorization" :  "oauth_consumer_key=assignment-135827,oauth_nonce=8311386766772752470,oauth_signature=8EPpdSYxhozjabUA1n6TQn%2FvsDo%3D,oauth_signature_method=HMAC-SHA1,oauth_timestamp=1473272425,oauth_version=1.0"]
+                path   : cancelURI,
+                query  : [eventUrl: dummyCancel],
+                headers: ["Authorization": "oauth_consumer_key=assignment-135827,oauth_nonce=8311386766772752470,oauth_signature=8EPpdSYxhozjabUA1n6TQn%2FvsDo%3D,oauth_signature_method=HMAC-SHA1,oauth_timestamp=1473272425,oauth_version=1.0"]
 
         ])
 
@@ -301,18 +306,26 @@ class SubscriptionControllerSpecification extends Specification {
         }
     }
 
+    @Ignore
     def "Valid subscription cancel order"() {
         given:
         //Mock API call
         def jsonResponse = xmlSerializer.read(validCancelResponse)
         given(this.httpService.getResponse(dummyCancel)).willReturn(jsonResponse)
 
-        //TODO mock
+        //Mock cancel call
+        def createResponse = xmlSerializer.read(validOrderResponse)
+        Subscription subscription = DataGeneratorUtil.buildCreateSubscription(createResponse);
+        def identifier = "dummy-account"
+        given(this.subscriptionRepository.findByIdentifier(identifier)).willReturn(subscription)
+
+        given(this.subscriptionRepository.saveAndFlush(subscription)).willReturn(subscription)
+
         when:
         def response = restClient.get([
-                path : cancelURI,
-                query: [eventUrl: dummyCancel],
-                headers: ["Authorization" :  "oauth_consumer_key=assignment-135827,oauth_nonce=8311386766772752470,oauth_signature=8EPpdSYxhozjabUA1n6TQn%2FvsDo%3D,oauth_signature_method=HMAC-SHA1,oauth_timestamp=1473272425,oauth_version=1.0"]
+                path   : cancelURI,
+                query  : [eventUrl: dummyCancel],
+                headers: ["Authorization": "oauth_consumer_key=assignment-135827,oauth_nonce=8311386766772752470,oauth_signature=8EPpdSYxhozjabUA1n6TQn%2FvsDo%3D,oauth_signature_method=HMAC-SHA1,oauth_timestamp=1473272425,oauth_version=1.0"]
 
         ])
 
