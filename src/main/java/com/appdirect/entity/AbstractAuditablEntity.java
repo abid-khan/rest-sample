@@ -1,6 +1,8 @@
 package com.appdirect.entity;
 
 import com.appdirect.constant.StatusType;
+import org.hibernate.annotations.Type;
+import org.joda.time.DateTime;
 import org.springframework.data.jpa.domain.AbstractPersistable;
 
 import javax.persistence.*;
@@ -14,6 +16,12 @@ import javax.persistence.*;
     @Column(name = "version") protected Long version;
 
     @Enumerated(EnumType.STRING) protected StatusType status;
+
+    @Type(type = "org.jadira.usertype.dateandtime.joda.PersistentDateTime")
+    protected DateTime createdDate;
+
+    @Type(type = "org.jadira.usertype.dateandtime.joda.PersistentDateTime")
+    protected DateTime lastModifiedDate;
 
     public Long getVersion() {
         return version;
@@ -29,5 +37,21 @@ import javax.persistence.*;
 
     public void setStatus(StatusType status) {
         this.status = status;
+    }
+
+    public DateTime getCreatedDate() {
+        return createdDate;
+    }
+
+    public void setCreatedDate(DateTime createdDate) {
+        this.createdDate = createdDate;
+    }
+
+    public DateTime getLastModifiedDate() {
+        return lastModifiedDate;
+    }
+
+    public void setLastModifiedDate(DateTime lastModifiedDate) {
+        this.lastModifiedDate = lastModifiedDate;
     }
 }

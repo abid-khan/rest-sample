@@ -91,15 +91,6 @@ public class HttpServiceImpl implements HttpService {
         }
     }
 
-    public static void main(String[] args) throws OAuthCommunicationException, OAuthExpectationFailedException, OAuthMessageSignerException {
 
-        String url = "http://localhost:8080/subscriptions/notifications/create";
-        OAuthConsumer  consumer = new DefaultOAuthConsumer("assignment-135827", "XmAXx4SgQB4EgYN8");
-
-        System.out.println( consumer.getToken());
-        consumer.setSigningStrategy(new AuthorizationHeaderSigningStrategy());
-        String signedUrl = consumer.sign(url);
-                System.out.println(signedUrl);
-    }
 
 }

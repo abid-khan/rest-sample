@@ -162,6 +162,7 @@ public class SubscriptionController {
 
             //Cancel subscription
             Subscription subscription = subscriptionService.findByIdentifier(accountIdentifier);
+            subscription = subscriptionService.cancel(subscription);
 
             return Response.ok().entity(ResponseUtil.buildResponse("true", "false", "success")).build();
 
